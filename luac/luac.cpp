@@ -2,11 +2,13 @@
 #include <fstream>
 #include <iostream>
 #include <filesystem>
+#include <tuple>
 
 #ifdef USE_THREAD
 #include "threadpool.h"
 #endif
 
+#include "cxxopts.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,13 +31,23 @@ extern "C" {
 }
 #endif
 
+namespace fs = std::filesystem;
+
+
 #define PROGNAME "luac"        /* default program name */
 #define OUTPUT PROGNAME ".out" /* default output file */
+
+#define CUSTOM_LUAC_VERSION  "0.1.0" // luac version
 
 const char *progname = PROGNAME;
 const char *output = OUTPUT;
 
-namespace fs = std::filesystem;
+
+static std::string input_dir;
+static std::string output_dir;
+static bool need_resave = false;
+
+
 
 static int fatal(lua_State* l, const char *message)
 {
@@ -128,7 +140,22 @@ int compile_lua(std::string& filename)
         
     const Proto *f = toproto(L, -1);
 
-    FILE *D = fopen(filename.c_str(), "wb");
+    std::string newfile;
+    if(need_resave) {
+        std::string s = filename;
+        s.replace(0, input_dir.size(),"");
+        fs::path p = output_dir;
+        newfile = p.string() + s;
+        p = newfile.c_str();
+        fs::create_directories(p.remove_filename());
+    } else {
+        newfile = filename;
+    }
+
+    // std::cout << "newfile: "<< newfile <<std::endl;
+
+
+    FILE *D = fopen(newfile.c_str(), "wb");
     if (D == NULL)
         return cannot(L, "open");
 
@@ -145,33 +172,73 @@ int compile_lua(std::string& filename)
 }
 
 bool ignore(fs::directory_entry entry) {
-    auto s=entry.path().string();
-    if(s.find(".git") != -1 ||
-        s.find(".svn") != -1 ||
-        s.find(".DS_Store") != -1 ||
+    if(entry.path().extension().string() != ".lua" ||
         entry.is_directory()) {
             return true;
         }
     return false;
 }
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cout << "please input dir "<<std::endl;
-        return EXIT_FAILURE;
+fs::directory_entry build_dir_entry(std::string dir)
+{
+    fs::path p(dir);
+    fs::directory_entry d(p);
+    return d;
+}
+
+int main(int argc, char *argv[]) 
+{
+    cxxopts::Options options("luac", "PixelNeko customed luac aim to compile lua source code to bytecode very quickly");
+    options.add_options()
+    ("d,dir","Lua code directory", cxxopts::value<std::string>())
+    ("o,output","resave the lua code to this directory", cxxopts::value<std::string>()->default_value(""))
+    ("v,version", "Customed luac version")
+    ("h,help","Print usage");
+
+    auto result = options.parse(argc, argv);
+
+    if(result.count("version")) {
+        std::cout << "luac version: "<<CUSTOM_LUAC_VERSION<<std::endl;
+        exit(0);
     }
 
-    fs::path p(argv[1]);
-    fs::directory_entry d(p);
+    if(result.count("help") || !result.count("dir")) {
+        std::cout << options.help() << std::endl;
+        exit(0);
+    }
+
+    if(result.count("output")) {
+        need_resave = true;
+        output_dir = result["output"].as<std::string>();
+        if(output_dir.empty()) {
+            std::cout<<"error: output dir is empty "<<std::endl<<options.help() <<std::endl;
+            exit(1);
+        }
+
+        auto d = build_dir_entry(output_dir);
+        if(d.is_directory()) {
+            std::cout<<"path: "<< output_dir <<" exist. delete it now." <<std::endl;
+            fs::remove_all(d);
+        }
+        bool ok = fs::create_directories(d);
+        std::cout << (ok ? "create dir success: ":"create dir failed: ") << d.path() << std::endl;
+        if(!ok) {
+            exit(1);
+        }
+    }
+
+    std::string dir = result["dir"].as<std::string>();
+    auto d = build_dir_entry(dir);
     if(!d.is_directory()) {
-        std::cout<<"input is not a directory "<<argv[1] <<std::endl;
+        std::cout<<"input is not a directory "<< dir <<std::endl;
         return 1;
     }
+    input_dir = dir;
 
 #ifdef USE_THREAD
-    std::cout << "use thread: " <<std::endl;
+    std::cout << "luac in multithread mode " <<std::endl;
     ThreadPool pool(4);
-    std::vector< std::future<int> > results;
+    std::vector< std::future<std::tuple<int, std::string>> > results;
 
     for(auto& p: fs::recursive_directory_iterator(d.path().string())) {
         if(ignore(p)) {
@@ -181,14 +248,17 @@ int main(int argc, char *argv[]) {
         results.emplace_back(
             pool.enqueue([p] {
                 auto filename = p.path().string();
-                return compile_lua(filename);
+                return std::make_tuple(compile_lua(filename), filename);
             })
         );
     }
 
-    // for(auto && result: results)
-    //     std::cout << result.get() << ' ';
-    std::cout << "trans over" << std::endl;
+    for(auto && result: results) {
+        auto value = result.get();
+        if(std::get<0>(value) != 0) {
+            std::cout << "luac compile failed: " <<  std::get<1>(value) << std::endl;
+        }   
+    }
 #else
     for(auto& p: fs::recursive_directory_iterator(d.path().string())) {
         if(ignore(p)) {
