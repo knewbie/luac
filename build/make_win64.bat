@@ -1,6 +1,5 @@
-mkdir build64 & pushd build64
-cmake -DLUAC_COMPATIBLE_FORMAT=ON -G "Visual Studio 14 2015 Win64" ..
-IF %ERRORLEVEL% NEQ 0 cmake -DLUAC_COMPATIBLE_FORMAT=ON -G "Visual Studio 15 2017 Win64" ..
+mkdir build_win_64tool & pushd build_win_64tool
+cmake ../src -G "Visual Studio 16 2019" -T v141 -A x64 -DNEKOFS_MAKE_TOOLS_LIB=ON
 popd
-cmake --build build64 --config Release
+cmake --build build_win_64tool --config Release
 pause
