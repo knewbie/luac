@@ -47,8 +47,9 @@ set ( LUA_CORE ${LUA_SRC_PATH}/lapi.c ${LUA_SRC_PATH}/lcode.c ${LUA_SRC_PATH}/lc
 set ( LUA_LIB ${LUA_SRC_PATH}/lauxlib.c ${LUA_SRC_PATH}/lbaselib.c ${LUA_SRC_PATH}/lbitlib.c ${LUA_SRC_PATH}/lcorolib.c ${LUA_SRC_PATH}/ldblib.c
   ${LUA_SRC_PATH}/liolib.c ${LUA_SRC_PATH}/lmathlib.c ${LUA_SRC_PATH}/loslib.c ${LUA_SRC_PATH}/lstrlib.c ${LUA_SRC_PATH}/ltablib.c ${LUA_SRC_PATH}/linit.c
   ${LUA_SRC_PATH}/lutf8lib.c ${LUA_SRC_PATH}/loadlib.c )
-set ( LUAC ${LUAC_SRC_PATH}/luac.cpp )
+set ( LUACFAST ${LUAC_SRC_PATH}/luac.cpp )
 set ( LUA ${LUA_SRC_PATH}/lua.c )
+set ( LUAC ${LUA_SRC_PATH}/luac.c )
 
 macro(source_group_by_dir proj_dir source_files)
     if(MSVC OR APPLE)
@@ -70,16 +71,19 @@ endmacro(source_group_by_dir)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} LUA_CORE)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} LUA_LIB)
 source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} LUAC)
+source_group_by_dir(${CMAKE_CURRENT_SOURCE_DIR} LUACFAST)
 
 add_executable (luac ${LUA_CORE} ${LUA_LIB} ${LUAC})
 add_executable (lua ${LUA_CORE} ${LUA_LIB} ${LUA})
+add_executable (luac_fast ${LUA_CORE} ${LUA_LIB} ${LUACFAST})
 
 if (LUAC_COMPATIBLE_FORMAT)
     target_compile_definitions (luac PRIVATE LUAC_COMPATIBLE_FORMAT)
     target_compile_definitions (lua PRIVATE LUAC_COMPATIBLE_FORMAT)
+    target_compile_definitions (luac_fast PRIVATE LUAC_COMPATIBLE_FORMAT)
 endif ()
 
 if (USE_THREAD)
-    target_compile_definitions (luac PRIVATE USE_THREAD)
+    target_compile_definitions (luac_fast PRIVATE USE_THREAD)
 endif()
 
