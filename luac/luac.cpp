@@ -132,7 +132,16 @@ int compile_lua(std::string& filename)
         return fatal(msg);
     }
 #else
-    if (luaL_loadfile(L, filename.c_str()) != LUA_OK){
+
+    std::string_view mod_name = filename;
+    mod_name.remove_prefix(input_dir.size());
+    if(mod_name[0] == '/') {
+        mod_name.remove_prefix(1);
+    }
+    // std::cout << "new mod name: " << mod_name << std::endl;
+
+    FILE *readF = fopen(filename.c_str(), "rb");
+    if (luaL_loadfilex_custom(L, filename.c_str(), std::string(mod_name).c_str(), NULL) != LUA_OK){
         char msg[512];
         snprintf(msg, 512, "%s:%d: %s", __FUNCTION__,__LINE__, lua_tostring(L, -1));
         return fatal(L, msg);
@@ -268,7 +277,7 @@ int main(int argc, char *argv[])
 
         int ret = compile_lua(filename);
         if (ret) {
-            std::cout<< "FILE: " << p << "luac error."<<std::endl;
+            std::cout<< "FILE: " << p.path() << "luac error."<<std::endl;
         }
     }
 #endif 
