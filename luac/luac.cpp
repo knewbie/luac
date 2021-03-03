@@ -140,7 +140,7 @@ int compile_lua(std::string& filename)
     }
     // std::cout << "new mod name: " << mod_name << std::endl;
 
-    FILE *readF = fopen(filename.c_str(), "rb");
+    // FILE *readF = fopen(filename.c_str(), "rb");
     if (luaL_loadfilex_custom(L, filename.c_str(), std::string(mod_name).c_str(), NULL) != LUA_OK){
         char msg[512];
         snprintf(msg, 512, "%s:%d: %s", __FUNCTION__,__LINE__, lua_tostring(L, -1));
