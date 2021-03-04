@@ -244,6 +244,8 @@ int main(int argc, char *argv[])
     }
     input_dir = dir;
 
+    bool compile_ok = true;
+
 #ifdef USE_THREAD
     std::cout << "luac in multithread mode " <<std::endl;
     ThreadPool pool(4);
@@ -265,6 +267,7 @@ int main(int argc, char *argv[])
     for(auto && result: results) {
         auto value = result.get();
         if(std::get<0>(value) != 0) {
+            compile_ok = false;
             std::cout << "luac compile failed: " <<  std::get<1>(value) << std::endl;
         }   
     }
@@ -278,8 +281,9 @@ int main(int argc, char *argv[])
         int ret = compile_lua(filename);
         if (ret) {
             std::cout<< "FILE: " << p.path() << "luac error."<<std::endl;
+            compile_ok = false;
         }
     }
 #endif 
-    return 0;
+    return compile_ok?0: 1;
 }
