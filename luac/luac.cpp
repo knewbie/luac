@@ -39,6 +39,7 @@ namespace fs = std::filesystem;
 
 #define CUSTOM_LUAC_VERSION  "0.1.0" // luac version
 
+
 const char *progname = PROGNAME;
 const char *output = OUTPUT;
 
@@ -47,7 +48,14 @@ static std::string input_dir;
 static std::string output_dir;
 static bool need_resave = false;
 
-
+inline char separator()
+{
+    #ifdef _WIN32
+        return '\\';
+    #else
+        return '/';
+    #endif
+}
 
 static int fatal(lua_State* l, const char *message)
 {
@@ -135,7 +143,8 @@ int compile_lua(std::string& filename)
 
     std::string_view mod_name = filename;
     mod_name.remove_prefix(input_dir.size());
-    if(mod_name[0] == '/') {
+
+    if(mod_name[0] == separator()) {
         mod_name.remove_prefix(1);
     }
     // std::cout << "new mod name: " << mod_name << std::endl;
@@ -272,6 +281,7 @@ int main(int argc, char *argv[])
         }   
     }
 #else
+	std::cout << "luac in one thread mode "<< d << std::endl;
     for(auto& p: fs::recursive_directory_iterator(d.path().string())) {
         if(ignore(p)) {
             continue;
