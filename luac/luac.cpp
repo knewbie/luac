@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
         }   
     }
 #else
-	std::cout << "luac in one thread mode "<< d << std::endl;
+	std::cout << "luac in one thread mode " << d.path() << std::endl;
     for(auto& p: fs::recursive_directory_iterator(d.path().string())) {
         if(ignore(p)) {
             continue;
