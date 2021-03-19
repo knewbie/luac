@@ -31,6 +31,7 @@ extern "C" {
 }
 #endif
 
+
 namespace fs = std::filesystem;
 
 
@@ -147,7 +148,7 @@ int compile_lua(std::string& filename)
     if(mod_name[0] == separator()) {
         mod_name.remove_prefix(1);
     }
-    // std::cout << "new mod name: " << mod_name << std::endl;
+    std::cout << "new mod name: " << mod_name << std::endl;
 
     // FILE *readF = fopen(filename.c_str(), "rb");
     if (luaL_loadfilex_custom(L, filename.c_str(), std::string(mod_name).c_str(), NULL) != LUA_OK){
@@ -160,17 +161,15 @@ int compile_lua(std::string& filename)
 
     std::string newfile;
     if(need_resave) {
-        std::string s = filename;
-        s.replace(0, input_dir.size(),"");
-        fs::path p = output_dir;
-        newfile = p.string() + s;
-        p = newfile.c_str();
+        fs::path p = fs::path(output_dir).append(mod_name);
+        newfile = p.string();
         fs::create_directories(p.remove_filename());
+        std::cout << "create dir: "<< p << std::endl;
     } else {
         newfile = filename;
     }
 
-    // std::cout << "newfile: "<< newfile <<std::endl;
+    std::cout << "newfile: "<< newfile <<std::endl;
 
 
     FILE *D = fopen(newfile.c_str(), "wb");
@@ -231,15 +230,16 @@ int main(int argc, char *argv[])
         if(output_dir.empty()) {
             std::cout<<"error: output dir is empty "<<std::endl<<options.help() <<std::endl;
             exit(1);
-        }
+       }
 
-        auto d = build_dir_entry(output_dir);
-        if(d.is_directory()) {
-            std::cout<<"path: "<< output_dir <<" exist. delete it now." <<std::endl;
-            fs::remove_all(d);
+        fs::path p(output_dir);
+        if (fs::exists(p)) {
+			std::cout << "path: " << output_dir << " exist. delete it now." << std::endl;
+			fs::remove_all(p);
         }
-        bool ok = fs::create_directories(d);
-        std::cout << (ok ? "create dir success: ":"create dir failed: ") << d.path() << std::endl;
+       
+        bool ok = fs::create_directories(p);
+        std::cout << (ok ? "create dir success: ":"create dir failed: ") << p << std::endl;
         if(!ok) {
             exit(1);
         }
@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
     bool compile_ok = true;
 
-#ifdef USE_THREAD
+#ifndef USE_THREAD
     std::cout << "luac in multithread mode " <<std::endl;
     ThreadPool pool(4);
     std::vector< std::future<std::tuple<int, std::string>> > results;
