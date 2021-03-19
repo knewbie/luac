@@ -1,6 +1,5 @@
 mkdir build32 & pushd build32
-cmake -DLUAC_COMPATIBLE_FORMAT=ON -G "Visual Studio 14 2015" ..
-IF %ERRORLEVEL% NEQ 0 cmake -DLUAC_COMPATIBLE_FORMAT=ON -G "Visual Studio 15 2017" ..
+cmake .. -G "Visual Studio 16 2019" -T v141 -A x86 -DLUAC_COMPATIBLE_FORMAT=ON -DUSE_THREAD=ON
 popd
 cmake --build build32 --config Release
 pause
