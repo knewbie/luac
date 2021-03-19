@@ -148,9 +148,9 @@ int compile_lua(std::string& filename)
     if(mod_name[0] == separator()) {
         mod_name.remove_prefix(1);
     }
-    std::cout << "new mod name: " << mod_name << std::endl;
 
-    // FILE *readF = fopen(filename.c_str(), "rb");
+    // std::cout << "new mod name: " << mod_name << std::endl;
+
     if (luaL_loadfilex_custom(L, filename.c_str(), std::string(mod_name).c_str(), NULL) != LUA_OK){
         char msg[512];
         snprintf(msg, 512, "%s:%d: %s", __FUNCTION__,__LINE__, lua_tostring(L, -1));
@@ -164,13 +164,12 @@ int compile_lua(std::string& filename)
         fs::path p = fs::path(output_dir).append(mod_name);
         newfile = p.string();
         fs::create_directories(p.remove_filename());
-        std::cout << "create dir: "<< p << std::endl;
+        // std::cout << "create dir: "<< p << std::endl;
     } else {
         newfile = filename;
     }
 
-    std::cout << "newfile: "<< newfile <<std::endl;
-
+    // std::cout << "newfile: "<< newfile <<std::endl;
 
     FILE *D = fopen(newfile.c_str(), "wb");
     if (D == NULL)
