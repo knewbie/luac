@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
 
     bool compile_ok = true;
 
-#ifndef USE_THREAD
+#ifdef USE_THREAD
     std::cout << "luac in multithread mode " <<std::endl;
     ThreadPool pool(4);
     std::vector< std::future<std::tuple<int, std::string>> > results;
